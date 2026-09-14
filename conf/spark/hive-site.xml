@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<configuration>
+
+    <!-- PostgreSQL connection -->
+    <property>
+        <name>javax.jdo.option.ConnectionURL</name>
+        <value>jdbc:postgresql://postgres-db:5432/${env.POSTGRES_DB}</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionDriverName</name>
+        <value>org.postgresql.Driver</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionUserName</name>
+        <value>${env.POSTGRES_USER}</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionPassword</name>
+        <value>${env.POSTGRES_PASSWORD}</value>
+    </property>
+
+    <!-- Baseline Configuration: Auto-create Hive metastore schema on first connection -->
+    <property>
+        <name>datanucleus.schema.autoCreateAll</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>datanucleus.fixedDatastore</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>hive.metastore.schema.verification</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>hive.metastore.schema.verification.record.version</name>
+        <value>true</value>
+    </property>
+
+</configuration>

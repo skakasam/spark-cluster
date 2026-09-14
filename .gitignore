@@ -1,0 +1,12 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Spark runtime output
+data/events/
+data/output/
+data/warehouse/
+
+# Secrets
+.env

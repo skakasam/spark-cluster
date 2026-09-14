@@ -1,0 +1,281 @@
+services:
+    postgres:
+        image: ${POSTGRES_IMAGE}
+        container_name: postgres-db
+        hostname: postgres-db
+        environment:
+            POSTGRES_DB: ${POSTGRES_DB}
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        ports:
+            - "${POSTGRES_PORT}:5432"
+        volumes:
+            - pgsql_data:/var/lib/postgresql/data
+            - ./conf/pgsql/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+        networks:
+            - spark_network
+        deploy:
+            resources:
+                limits:
+                    cpus: "${POSTGRES_CPUS}"
+                    memory: "${POSTGRES_MEMORY}"
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    spark-master:
+        # image: apache/spark:3.5.8
+        build:
+            context: .
+            args:
+                HADOOP_VERSION: ${HADOOP_VERSION}
+        image: ${SPARK_IMAGE}
+        container_name: spark-master
+        hostname: spark-master
+        command: >
+            bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.master.Master"
+        environment:
+            - SPARK_NO_DAEMONIZE=true
+            - SPARK_MASTER_PORT=7077
+            - SPARK_MASTER_WEBUI_PORT=8080
+            - SPARK_MASTER_HOST=spark-master
+        ports:
+            - "${SPARK_MASTER_WEBUI_PORT}:8080"
+            - "${SPARK_MASTER_PORT}:7077"
+        volumes:
+            - ./conf/jars:/opt/spark/app-jars
+            - ./conf/spark:/opt/spark/conf
+        networks:
+            - spark_network
+        deploy:
+            resources:
+                limits:
+                    cpus: "${SPARK_MASTER_CPUS}"
+                    memory: "${SPARK_MASTER_MEMORY}"
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8080"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 30s
+        restart: no
+
+    spark-client:
+        image: ${SPARK_IMAGE}
+        container_name: spark-client
+        hostname: spark-client
+        tty: true
+        stdin_open: true
+        command: /bin/bash
+        depends_on:
+            spark-master:
+                condition: service_healthy
+            postgres:
+                condition: service_healthy
+        environment:
+            - SPARK_MASTER=spark://spark-master:7077
+            - SPARK_DRIVER_PORT=7001
+            - SPARK_BLOCKMANAGER_PORT=7002
+            - SPARK_DRIVER_BIND_ADDRESS=0.0.0.0
+            - SPARK_DRIVER_HOST=spark-client
+            - PYTHONPATH=/opt/spark/work-dir
+            - POSTGRES_DB=${POSTGRES_DB}
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        ports:
+            - "${SPARK_DRIVER_PORT}:7001"
+            - "${SPARK_BLOCKMANAGER_PORT}:7002"
+            - "${SPARK_DRIVER_UI_PORTS}:4040-4050"
+        volumes:
+            - ./conf/spark:/opt/spark/conf
+            - ./conf/jars:/opt/spark/app-jars
+            - projects:/opt/spark/work-dir/projects
+            - cluster_data:/opt/spark/work-dir/data
+            - cluster_events:/opt/spark/spark-events
+            - cluster_warehouse:/opt/spark/work-dir/warehouse
+        networks:
+            - spark_network
+        deploy:
+            resources:
+                limits:
+                    cpus: "${SPARK_CLIENT_CPUS}"
+                    memory: "${SPARK_CLIENT_MEMORY}"
+        restart: no
+
+    spark-worker-1:
+        image: ${SPARK_IMAGE}
+        container_name: spark-worker-1
+        hostname: spark-worker-1
+        command: >
+            bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker $$SPARK_MASTER"
+        environment:
+            - SPARK_MASTER=spark://spark-master:7077
+            - SPARK_NO_DAEMONIZE=true
+            - SPARK_WORKER_CORES=${SPARK_WORKER_CORES}
+            - SPARK_WORKER_MEMORY=${SPARK_WORKER_MEMORY}
+            - SPARK_WORKER_WEBUI_PORT=8081
+            - PYTHONPATH=/opt/spark/work-dir
+            - POSTGRES_DB=${POSTGRES_DB}
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        ports:
+            - "${SPARK_WORKER1_WEBUI_PORT}:8081"
+        depends_on:
+            spark-master:
+                condition: service_healthy
+        volumes:
+            - ./conf/spark:/opt/spark/conf
+            - ./conf/jars:/opt/spark/app-jars
+            - projects:/opt/spark/work-dir/projects
+            - cluster_data:/opt/spark/work-dir/data
+            - cluster_events:/opt/spark/spark-events
+            - cluster_warehouse:/opt/spark/work-dir/warehouse
+        networks:
+            - spark_network
+        deploy:
+            resources:
+                limits:
+                    cpus: "${SPARK_WORKER_CPUS}"
+                    memory: "${SPARK_WORKER_MEMORY_LIMIT}"
+        restart: no
+
+    spark-worker-2:
+        image: ${SPARK_IMAGE}
+        container_name: spark-worker-2
+        hostname: spark-worker-2
+        command: >
+            bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker $$SPARK_MASTER"
+        environment:
+            - SPARK_MASTER=spark://spark-master:7077
+            - SPARK_NO_DAEMONIZE=true
+            - SPARK_WORKER_CORES=${SPARK_WORKER_CORES}
+            - SPARK_WORKER_MEMORY=${SPARK_WORKER_MEMORY}
+            - SPARK_WORKER_WEBUI_PORT=8082
+            - PYTHONPATH=/opt/spark/work-dir
+            - POSTGRES_DB=${POSTGRES_DB}
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        ports:
+            - "${SPARK_WORKER2_WEBUI_PORT}:8082"
+        depends_on:
+            spark-master:
+                condition: service_healthy
+        volumes:
+            - ./conf/spark:/opt/spark/conf
+            - ./conf/jars:/opt/spark/app-jars
+            - projects:/opt/spark/work-dir/projects
+            - cluster_data:/opt/spark/work-dir/data
+            - cluster_events:/opt/spark/spark-events
+            - cluster_warehouse:/opt/spark/work-dir/warehouse
+        networks:
+            - spark_network
+        deploy:
+            resources:
+                limits:
+                    cpus: "${SPARK_WORKER_CPUS}"
+                    memory: "${SPARK_WORKER_MEMORY_LIMIT}"
+        restart: no
+
+    spark-worker-3:
+        image: ${SPARK_IMAGE}
+        container_name: spark-worker-3
+        hostname: spark-worker-3
+        command: >
+            bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker $$SPARK_MASTER"
+        environment:
+            - SPARK_MASTER=spark://spark-master:7077
+            - SPARK_NO_DAEMONIZE=true
+            - SPARK_WORKER_CORES=${SPARK_WORKER_CORES}
+            - SPARK_WORKER_MEMORY=${SPARK_WORKER_MEMORY}
+            - SPARK_WORKER_WEBUI_PORT=8083
+            - PYTHONPATH=/opt/spark/work-dir
+            - POSTGRES_DB=${POSTGRES_DB}
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        ports:
+            - "${SPARK_WORKER3_WEBUI_PORT}:8083"
+        depends_on:
+            spark-master:
+                condition: service_healthy
+        volumes:
+            - ./conf/spark:/opt/spark/conf
+            - ./conf/jars:/opt/spark/app-jars
+            - projects:/opt/spark/work-dir/projects
+            - cluster_data:/opt/spark/work-dir/data
+            - cluster_events:/opt/spark/spark-events
+            - cluster_warehouse:/opt/spark/work-dir/warehouse
+        networks:
+            - spark_network
+        deploy:
+            resources:
+                limits:
+                    cpus: "${SPARK_WORKER_CPUS}"
+                    memory: "${SPARK_WORKER_MEMORY_LIMIT}"
+        restart: no
+
+    spark-history:
+        image: ${SPARK_IMAGE}
+        container_name: spark-history
+        hostname: spark-history
+        command: >
+            bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.history.HistoryServer"
+        environment:
+            - SPARK_NO_DAEMONIZE=true
+            - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=/opt/spark/spark-events -Dspark.history.ui.port=18080
+        ports:
+            - "${SPARK_HISTORY_UI_PORT}:18080"
+        volumes:
+            - cluster_events:/opt/spark/spark-events
+        networks:
+            - spark_network
+        deploy:
+            resources:
+                limits:
+                    cpus: "${SPARK_HISTORY_CPUS}"
+                    memory: "${SPARK_HISTORY_MEMORY}"
+        depends_on:
+            spark-master:
+                condition: service_healthy
+        restart: no
+
+networks:
+    spark_network:
+        driver: bridge
+
+volumes:
+    projects:
+        driver: local
+        driver_opts:
+          type: none
+          o: bind
+          device: ${PROJECTS_DIR}
+    pgsql_data:
+        driver: local
+        driver_opts:
+          type: none
+          o: bind
+          device: ${PGSQL_DATA_DIR}
+    cluster_data:
+        driver: local
+        driver_opts:
+          type: none
+          o: bind
+          device: ${CLUSTER_DATA_DIR}
+    cluster_events:
+        driver: local
+        driver_opts:
+          type: none
+          o: bind
+          device: ${CLUSTER_EVENTS_DIR}
+    cluster_warehouse:
+        driver: local
+        driver_opts:
+          type: none
+          o: bind
+          device: ${CLUSTER_WAREHOUSE_DIR}
