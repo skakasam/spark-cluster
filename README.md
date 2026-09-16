@@ -81,6 +81,35 @@ docker exec spark-client /opt/spark/bin/spark-submit /opt/spark/work-dir/project
 docker exec -it spark-client /opt/spark/bin/spark-sql
 ```
 
+## Open spark-sql (SQL CLI) to interact with the cluster using ThriftServer and Beeline
+
+Beeline provides a command-line interface to interact with the Spark ThriftServer using JDBC.
+
+It formats the sql results in a tabular form for easier readability.
+
+```bash
+docker exec -it spark-client /opt/spark/bin/beeline -u jdbc:hive2://spark-master:10000
+```
+
+Note:
+
+- Ensure that the ThriftServer is running on the Spark master before attempting to connect with Beeline.
+- Start the ThriftServer on the Spark master using the following command if necessary before connecting with Beeline:
+
+```bash
+# Start the ThriftServer on the Spark master using Bash
+docker exec -it spark-client /opt/spark/bin/spark-submit \
+--class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2 \
+--name "Hive Thrift Server"
+```
+
+```powershell
+# Start the ThriftServer on the Spark master using PowerShell
+docker exec -it spark-client /opt/spark/bin/spark-submit `
+--class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2 `
+--name "Hive Thrift Server"
+```
+
 ## Open pyspark (Python CLI) to interact with the cluster
 
 ```bash
