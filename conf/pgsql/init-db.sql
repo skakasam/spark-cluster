@@ -1,11 +1,11 @@
---
--- Create Hive metastore schema in PostgreSQL.
--- Simulating schematools functionality for Hive metastore schema.
--- This is a complete dump of the Hive metastore 2.3.0 schema for PostgreSQL.
--- https://raw.githubusercontent.com/apache/hive/rel/release-2.3.9/metastore/scripts/upgrade/postgres/hive-schema-2.3.0.postgres.sql
--- https://raw.githubusercontent.com/apache/hive/rel/release-2.3.9/metastore/scripts/upgrade/postgres/hive-txn-schema-2.3.0.postgres.sql
---
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- Create Hive metastore schema in PostgreSQL. Simulating schematools functionality for Hive metastore schema initialization.
+-- hive-schema-2.3.0.postgres.sql & hive-txn-schema-2.3.0.postgres.sql is a complete dump of the Hive metastore 2.3.0 schema.
+-----------------------------------------------------------------------------------------------------------------------------------------
 
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- hive-schema-2.3.0.postgres.sql
+-----------------------------------------------------------------------------------------------------------------------------------------
 SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = off;
@@ -1471,9 +1471,9 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-------------------------------
--- Transaction and lock tables
-------------------------------
+-----------------------------------------------------------------------------------------------------------------------------------------
+-- hive-txn-schema-2.3.0.postgres.sql
+-----------------------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE TXNS (
   TXN_ID bigint PRIMARY KEY,
   TXN_STATE char(1) NOT NULL,

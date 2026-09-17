@@ -1,6 +1,6 @@
 # Novus PySpark Multi-Node Cluster
 
-This repository contains the configuration and instructions to set up a multi-node Apache Spark cluster using Docker Compose. The cluster includes a Spark client, Spark master, Spark worker nodes, and a PostgreSQL database for the metastore. This cluster uses the apache/spark:3.5.8 as the base image and PostgreSQL as the metastore database for Delta Lake integration.
+This repository contains the configuration and instructions to set up a multi-node Apache Spark cluster using Docker Compose. The cluster includes a Spark client, Spark master, Spark worker nodes, and a PostgreSQL database for the metastore. This cluster uses the apache/spark:4.2.0 as the base image and PostgreSQL as the metastore database for Delta Lake integration.
 
 Please follow the instructions below to build, start, and interact with the cluster. Copy `.env.example` to `.env` in the root directory to configure environment variables for PostgreSQL credentials, volume host paths, port mappings, image tags, and container resource limits.
 

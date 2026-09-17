@@ -1,4 +1,4 @@
-FROM apache/spark:3.5.8
+FROM apache/spark:4.2.0-scala2.13-java21-python3-ubuntu
 
 # Switch to root to install packages
 USER root
@@ -16,7 +16,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Hadoop and configure native libraries
-ARG HADOOP_VERSION=3.3.6
+ARG HADOOP_VERSION=3.4.2
 ENV HADOOP_VERSION=${HADOOP_VERSION}
 ENV HADOOP_HOME=/opt/hadoop
 ENV HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
