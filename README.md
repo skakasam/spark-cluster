@@ -78,7 +78,17 @@ docker exec spark-client /opt/spark/bin/spark-submit /opt/spark/work-dir/project
 ## Open spark-sql (SQL CLI) to interact with the cluster
 
 ```bash
-docker exec -it spark-client /opt/spark/bin/spark-sql
+docker exec -it spark-client /opt/spark/bin/spark-sql \
+--conf spark.cores.max=4 \
+--conf spark.executor.cores=1 \
+--conf spark.executor.memory=1536m
+```
+
+```powershell
+docker exec -it spark-client /opt/spark/bin/spark-sql `
+--conf spark.cores.max=4 `
+--conf spark.executor.cores=1 `
+--conf spark.executor.memory=1536m
 ```
 
 ## Open spark-sql (SQL CLI) to interact with the cluster using ThriftServer and Beeline
@@ -113,7 +123,17 @@ docker exec -it spark-client /opt/spark/bin/spark-submit `
 ## Open pyspark (Python CLI) to interact with the cluster
 
 ```bash
-docker exec -it spark-client /opt/spark/bin/pyspark
+docker exec -it spark-client /opt/spark/bin/pyspark \
+--conf spark.cores.max=4 \
+--conf spark.executor.cores=1 \
+--conf spark.executor.memory=1536m
+```
+
+```powershell
+docker exec -it spark-client /opt/spark/bin/pyspark `
+--conf spark.cores.max=4 `
+--conf spark.executor.cores=1 `
+--conf spark.executor.memory=1536m
 ```
 
 ## Open bash (Bash Shell) to interact with the cluster

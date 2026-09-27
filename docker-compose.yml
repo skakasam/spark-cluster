@@ -18,7 +18,7 @@ services:
             resources:
                 limits:
                     cpus: "${POSTGRES_CPUS}"
-                    memory: "${POSTGRES_MEMORY}"
+                    memory: "${POSTGRES_MEMORY_LIMIT}"
         healthcheck:
             test:
                 [
@@ -57,7 +57,7 @@ services:
             resources:
                 limits:
                     cpus: "${SPARK_MASTER_CPUS}"
-                    memory: "${SPARK_MASTER_MEMORY}"
+                    memory: "${SPARK_MASTER_MEMORY_LIMIT}"
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080"]
             interval: 30s
@@ -80,8 +80,8 @@ services:
                 condition: service_healthy
         environment:
             - SPARK_MASTER=spark://spark-master:7077
-            - SPARK_DRIVER_PORT=7001
-            - SPARK_BLOCKMANAGER_PORT=7002
+            - SPARK_DRIVER_PORT_RANGE=7010-7019
+            - SPARK_BLOCKMANAGER_PORT_RANGE=7020-7029
             - SPARK_DRIVER_BIND_ADDRESS=0.0.0.0
             - SPARK_DRIVER_HOST=spark-client
             - PYTHONPATH=/opt/spark/work-dir
@@ -89,9 +89,9 @@ services:
             - POSTGRES_USER=${POSTGRES_USER}
             - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
         ports:
-            - "${SPARK_DRIVER_PORT}:7001"
-            - "${SPARK_BLOCKMANAGER_PORT}:7002"
-            - "${SPARK_DRIVER_UI_PORTS}:4040-4050"
+            - "${SPARK_DRIVER_PORT}:7010-7019"
+            - "${SPARK_BLOCKMANAGER_PORT}:7020-7029"
+            - "${SPARK_DRIVER_UI_PORTS}:4040-4049"
         volumes:
             - ./conf/spark:/opt/spark/conf
             - ./conf/jars:/opt/spark/app-jars
@@ -105,7 +105,7 @@ services:
             resources:
                 limits:
                     cpus: "${SPARK_CLIENT_CPUS}"
-                    memory: "${SPARK_CLIENT_MEMORY}"
+                    memory: "${SPARK_CLIENT_MEMORY_LIMIT}"
         restart: no
 
     spark-worker-1:
@@ -200,6 +200,43 @@ services:
             - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
         ports:
             - "${SPARK_WORKER3_WEBUI_PORT}:8083"
+        depends_on:
+            spark-master:
+                condition: service_healthy
+        volumes:
+            - ./conf/spark:/opt/spark/conf
+            - ./conf/jars:/opt/spark/app-jars
+            - projects:/opt/spark/work-dir/projects
+            - cluster_data:/opt/spark/work-dir/data
+            - cluster_events:/opt/spark/spark-events
+            - cluster_warehouse:/opt/spark/work-dir/warehouse
+        networks:
+            - spark_network
+        deploy:
+            resources:
+                limits:
+                    cpus: "${SPARK_WORKER_CPUS}"
+                    memory: "${SPARK_WORKER_MEMORY_LIMIT}"
+        restart: no
+
+    spark-worker-4:
+        image: ${SPARK_IMAGE}
+        container_name: spark-worker-4
+        hostname: spark-worker-4
+        command: >
+            bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker $$SPARK_MASTER"
+        environment:
+            - SPARK_MASTER=spark://spark-master:7077
+            - SPARK_NO_DAEMONIZE=true
+            - SPARK_WORKER_CORES=${SPARK_WORKER_CORES}
+            - SPARK_WORKER_MEMORY=${SPARK_WORKER_MEMORY}
+            - SPARK_WORKER_WEBUI_PORT=8084
+            - PYTHONPATH=/opt/spark/work-dir
+            - POSTGRES_DB=${POSTGRES_DB}
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        ports:
+            - "${SPARK_WORKER4_WEBUI_PORT}:8084"
         depends_on:
             spark-master:
                 condition: service_healthy
