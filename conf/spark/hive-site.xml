@@ -36,5 +36,9 @@
         <name>hive.metastore.schema.verification.record.version</name>
         <value>true</value>
     </property>
+    <property>
+        <name>hive.warehouse.subdir.inherit.perms</name>
+        <value>false</value>
+    </property>
 
 </configuration>
