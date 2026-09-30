@@ -30,11 +30,8 @@ services:
             retries: 5
 
     spark-master:
-        # image: apache/spark:3.5.8
         build:
             context: .
-            args:
-                HADOOP_VERSION: ${HADOOP_VERSION}
         image: ${SPARK_IMAGE}
         container_name: spark-master
         hostname: spark-master
