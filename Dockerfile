@@ -1,9 +1,16 @@
+################################################################################
+# Set base image for the Spark environment
+################################################################################
 FROM apache/spark:4.2.0-scala2.13-java21-python3-ubuntu
 
+################################################################################
 # Switch to root to install packages
+################################################################################
 USER root
 
+################################################################################
 # Install system dependencies
+################################################################################
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     tar \
@@ -15,7 +22,9 @@ RUN apt-get update && \
     libsnappy-dev \
     && rm -rf /var/lib/apt/lists/*
 
+################################################################################
 # Install Hadoop and configure native libraries
+################################################################################
 ARG HADOOP_VERSION=3.4.2
 ENV HADOOP_VERSION=${HADOOP_VERSION}
 ENV HADOOP_HOME=/opt/hadoop
@@ -29,24 +38,37 @@ RUN curl -sL https://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERSI
     && mv /opt/hadoop-${HADOOP_VERSION} ${HADOOP_HOME} \
     && rm -rf ${HADOOP_HOME}/share/doc
 
-# Install python dependencies
+################################################################################
+# Install Python dependencies
+################################################################################
 ENV PYSPARK_PYTHON=/usr/bin/python3
 ENV PYSPARK_DRIVER_PYTHON=/usr/bin/python3
+COPY ./conf/python/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm -f /tmp/requirements.txt
 
-COPY ./conf/python/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
+################################################################################
 # Set environment variables for Spark classpath in standalone mode (no YARN/HDFS)
 # Keeping only Hadoop Common, MapReduce, client JARs in the classpath
+################################################################################
 ENV APP_JARS_PATH="/opt/spark/app-jars/*"
 ENV MAPR_JARS_PATH="/opt/hadoop/share/hadoop/mapreduce/*"
 ENV HADOOP_JARS_PATH="/opt/hadoop/etc/hadoop:/opt/hadoop/share/hadoop/common/lib/*:/opt/hadoop/share/hadoop/common/*"
 ENV SPARK_DIST_CLASSPATH="$APP_JARS_PATH:$MAPR_JARS_PATH:$HADOOP_JARS_PATH"
 
+################################################################################
 # HDFS and YARN trees are excluded to keep the classpath lean and avoid classloader conflicts.
-#ENV HDFS_JARS_PATH="/opt/hadoop/share/hadoop/hdfs:/opt/hadoop/share/hadoop/hdfs/lib/*:/opt/hadoop/share/hadoop/hdfs/*"
-#ENV YARN_JARS_PATH="/opt/hadoop/share/hadoop/yarn:/opt/hadoop/share/hadoop/yarn/lib/*:/opt/hadoop/share/hadoop/yarn/*"
-#ENV SPARK_DIST_CLASSPATH="$APP_JARS_PATH:$MAPR_JARS_PATH:$HDFS_JARS_PATH:$YARN_JARS_PATH:$HADOOP_JARS_PATH"
+################################################################################
+# ENV HDFS_JARS_PATH="/opt/hadoop/share/hadoop/hdfs:/opt/hadoop/share/hadoop/hdfs/lib/*:/opt/hadoop/share/hadoop/hdfs/*"
+# ENV YARN_JARS_PATH="/opt/hadoop/share/hadoop/yarn:/opt/hadoop/share/hadoop/yarn/lib/*:/opt/hadoop/share/hadoop/yarn/*"
+# ENV SPARK_DIST_CLASSPATH="$APP_JARS_PATH:$MAPR_JARS_PATH:$HDFS_JARS_PATH:$YARN_JARS_PATH:$HADOOP_JARS_PATH"
 
+################################################################################
+# Create JVM home directory
+################################################################################
+RUN mkdir -p /opt/spark/work-dir/.home
+RUN chown -R spark:spark /opt/spark/work-dir/.home
+
+################################################################################
 # Switch back to the default spark user
+################################################################################
 USER spark

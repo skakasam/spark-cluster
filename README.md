@@ -20,10 +20,11 @@ Key environment variables in `.env`:
   - `POSTGRES_PASSWORD`
 - **Volume Locations**:
   - `PROJECTS_DIR`
-  - `PGSQL_DATA_DIR`
-  - `CLUSTER_DATA_DIR`
-  - `CLUSTER_EVENTS_DIR`
-  - `CLUSTER_WAREHOUSE_DIR`
+  - `PGSQL_DIR`
+  - `EVENTS_DIR`
+  - `CATALOG_DIR`
+  - `DATASETS_DIR`
+  - `CHECKPOINTS_DIR`
 - **Port Mappings**:
   - `POSTGRES_PORT`
   - `SPARK_MASTER_WEBUI_PORT`
@@ -98,25 +99,25 @@ Beeline provides a command-line interface to interact with the Spark ThriftServe
 It formats the sql results in a tabular form for easier readability.
 
 ```bash
-docker exec -it spark-client /opt/spark/bin/beeline -u jdbc:hive2://spark-master:10000
+docker exec -it spark-client /opt/spark/bin/beeline -u jdbc:hive2://spark-client:10000
 ```
 
 Note:
 
-- Ensure that the ThriftServer is running on the Spark master before attempting to connect with Beeline.
-- Start the ThriftServer on the Spark master using the following command if necessary before connecting with Beeline:
+- The ThriftServer runs as a driver process inside the `spark-client` container (it is launched there via `docker exec`), so Beeline must connect to `spark-client:10000`, not `spark-master`.
+- Ensure that the ThriftServer is running before attempting to connect with Beeline.
+- `spark-submit --class ... HiveThriftServer2` requires a primary application resource; use `start-thriftserver.sh` instead, which handles this correctly and also picks up `spark.master` from `spark-defaults.conf`.
+- Start the ThriftServer inside the `spark-client` container using the following command if necessary before connecting with Beeline:
 
 ```bash
-# Start the ThriftServer on the Spark master using Bash
-docker exec -it spark-client /opt/spark/bin/spark-submit \
---class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2 \
+# Start the ThriftServer inside the spark-client container using Bash
+docker exec -it spark-client /opt/spark/sbin/start-thriftserver.sh \
 --name "Hive Thrift Server"
 ```
 
 ```powershell
-# Start the ThriftServer on the Spark master using PowerShell
-docker exec -it spark-client /opt/spark/bin/spark-submit `
---class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2 `
+# Start the ThriftServer inside the spark-client container using PowerShell
+docker exec -it spark-client /opt/spark/sbin/start-thriftserver.sh `
 --name "Hive Thrift Server"
 ```
 

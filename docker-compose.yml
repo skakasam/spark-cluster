@@ -10,7 +10,7 @@ services:
         ports:
             - "${POSTGRES_PORT}:5432"
         volumes:
-            - pgsql_data:/var/lib/postgresql/data
+            - pgsql_volume:/var/lib/postgresql/data
             - ./conf/pgsql/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
         networks:
             - spark_network
@@ -95,10 +95,11 @@ services:
         volumes:
             - ./conf/spark:/opt/spark/conf
             - ./conf/jars:/opt/spark/app-jars
-            - projects:/opt/spark/work-dir/projects
-            - cluster_data:/opt/spark/work-dir/data
-            - cluster_events:/opt/spark/spark-events
-            - cluster_warehouse:/opt/spark/work-dir/warehouse
+            - events_volume:/opt/spark/spark-events
+            - catalog_volume:/opt/spark/work-dir/catalog
+            - datasets_volume:/opt/spark/work-dir/datasets
+            - projects_volume:/opt/spark/work-dir/projects
+            - checkpoints_volume:/opt/spark/work-dir/checkpoints
         networks:
             - spark_network
         deploy:
@@ -132,10 +133,11 @@ services:
         volumes:
             - ./conf/spark:/opt/spark/conf
             - ./conf/jars:/opt/spark/app-jars
-            - projects:/opt/spark/work-dir/projects
-            - cluster_data:/opt/spark/work-dir/data
-            - cluster_events:/opt/spark/spark-events
-            - cluster_warehouse:/opt/spark/work-dir/warehouse
+            - events_volume:/opt/spark/spark-events
+            - catalog_volume:/opt/spark/work-dir/catalog
+            - datasets_volume:/opt/spark/work-dir/datasets
+            - projects_volume:/opt/spark/work-dir/projects
+            - checkpoints_volume:/opt/spark/work-dir/checkpoints
         networks:
             - spark_network
         deploy:
@@ -169,10 +171,11 @@ services:
         volumes:
             - ./conf/spark:/opt/spark/conf
             - ./conf/jars:/opt/spark/app-jars
-            - projects:/opt/spark/work-dir/projects
-            - cluster_data:/opt/spark/work-dir/data
-            - cluster_events:/opt/spark/spark-events
-            - cluster_warehouse:/opt/spark/work-dir/warehouse
+            - events_volume:/opt/spark/spark-events
+            - catalog_volume:/opt/spark/work-dir/catalog
+            - datasets_volume:/opt/spark/work-dir/datasets
+            - projects_volume:/opt/spark/work-dir/projects
+            - checkpoints_volume:/opt/spark/work-dir/checkpoints
         networks:
             - spark_network
         deploy:
@@ -206,10 +209,11 @@ services:
         volumes:
             - ./conf/spark:/opt/spark/conf
             - ./conf/jars:/opt/spark/app-jars
-            - projects:/opt/spark/work-dir/projects
-            - cluster_data:/opt/spark/work-dir/data
-            - cluster_events:/opt/spark/spark-events
-            - cluster_warehouse:/opt/spark/work-dir/warehouse
+            - events_volume:/opt/spark/spark-events
+            - catalog_volume:/opt/spark/work-dir/catalog
+            - datasets_volume:/opt/spark/work-dir/datasets
+            - projects_volume:/opt/spark/work-dir/projects
+            - checkpoints_volume:/opt/spark/work-dir/checkpoints
         networks:
             - spark_network
         deploy:
@@ -243,10 +247,11 @@ services:
         volumes:
             - ./conf/spark:/opt/spark/conf
             - ./conf/jars:/opt/spark/app-jars
-            - projects:/opt/spark/work-dir/projects
-            - cluster_data:/opt/spark/work-dir/data
-            - cluster_events:/opt/spark/spark-events
-            - cluster_warehouse:/opt/spark/work-dir/warehouse
+            - events_volume:/opt/spark/spark-events
+            - catalog_volume:/opt/spark/work-dir/catalog
+            - datasets_volume:/opt/spark/work-dir/datasets
+            - projects_volume:/opt/spark/work-dir/projects
+            - checkpoints_volume:/opt/spark/work-dir/checkpoints
         networks:
             - spark_network
         deploy:
@@ -268,14 +273,15 @@ services:
         ports:
             - "${SPARK_HISTORY_UI_PORT}:18080"
         volumes:
-            - cluster_events:/opt/spark/spark-events
+            - ./conf/spark:/opt/spark/conf
+            - events_volume:/opt/spark/spark-events
         networks:
             - spark_network
         deploy:
             resources:
                 limits:
                     cpus: "${SPARK_HISTORY_CPUS}"
-                    memory: "${SPARK_HISTORY_MEMORY}"
+                    memory: "${SPARK_HISTORY_MEMORY_LIMIT}"
         depends_on:
             spark-master:
                 condition: service_healthy
@@ -286,33 +292,39 @@ networks:
         driver: bridge
 
 volumes:
-    projects:
+    pgsql_volume:
+        driver: local
+        driver_opts:
+          type: none
+          o: bind
+          device: ${PGSQL_DIR}
+    projects_volume:
         driver: local
         driver_opts:
           type: none
           o: bind
           device: ${PROJECTS_DIR}
-    pgsql_data:
+    events_volume:
         driver: local
         driver_opts:
           type: none
           o: bind
-          device: ${PGSQL_DATA_DIR}
-    cluster_data:
+          device: ${EVENTS_DIR}
+    catalog_volume:
         driver: local
         driver_opts:
           type: none
           o: bind
-          device: ${CLUSTER_DATA_DIR}
-    cluster_events:
+          device: ${CATALOG_DIR}
+    datasets_volume:
         driver: local
         driver_opts:
           type: none
           o: bind
-          device: ${CLUSTER_EVENTS_DIR}
-    cluster_warehouse:
+          device: ${DATASETS_DIR}
+    checkpoints_volume:
         driver: local
         driver_opts:
           type: none
           o: bind
-          device: ${CLUSTER_WAREHOUSE_DIR}
+          device: ${CHECKPOINTS_DIR}
